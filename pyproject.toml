@@ -1,6 +1,6 @@
 [project]
 name = "pyfound"
-version = "0.1.2"
+version = "0.1.3"
 description = "Found! is an AI enabled tool for fast semantic search over your personal documents."
 readme = "README.md"
 authors = [
@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 found = "found:cli"
+pyfound = "found:cli"
 
 [build-system]
 requires = ["hatchling"]
