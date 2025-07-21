@@ -1,5 +1,5 @@
 [project]
-name = "found"
+name = "pyfound"
 version = "0.1.0"
 description = "Found! is an AI enabled tool for fast semantic search over your personal documents."
 readme = "README.md"
@@ -20,6 +20,9 @@ found = "found:cli"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/found"]
 
 [[tool.uv.index]]
 name = "testpypi"
