@@ -1,7 +1,7 @@
 [project]
 name = "found"
 version = "0.1.0"
-description = "Add your description here"
+description = "Found! is an AI enabled tool for fast semantic search over your personal documents."
 readme = "README.md"
 authors = [
     { name = "Henning Claßen", email = "code@clssn.de" }
@@ -20,3 +20,9 @@ found = "found:cli"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
