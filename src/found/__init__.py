@@ -89,8 +89,8 @@ def cache_index(cachedir, cache_key_arg):
     return decorator
 
 
-class DocFinder:
-    appname: str = "docfinder"
+class DocumentFinder:
+    appname: str = "found"
 
     def __init__(self):
         self.cachedir = user_cache_dir(self.appname)
@@ -133,16 +133,16 @@ cli = typer.Typer()
 
 @cli.command()
 def version():
-    """Show the version of docfinder."""
+    """Show the version of found."""
     try:
-        ver = importlib.metadata.version("docfinder")
+        ver = importlib.metadata.version("found")
     except importlib.metadata.PackageNotFoundError:
         ver = "unknown (package not installed)"
-    print(f"docfinder version {ver}")
+    print(f"found version {ver}")
 
 
 @cli.command()
-def search(
+def doc(
     query: str = typer.Argument(..., help="Search query for your documents."),
     document_dir: Annotated[
         str,
@@ -159,11 +159,11 @@ def search(
     """Search for the best matching document."""
     if verbose:
         logger.setLevel(logging.DEBUG)
-    app = DocFinder()
+    app = DocumentFinder()
     match = app.find_best_match(query, Path(document_dir))
 
-    print(f"Query: {query}")
-    print(f"Best match: {match}")
+    print(f"query: {query}")
+    print(f"found document: {match}")
 
 
 if __name__ == "__main__":

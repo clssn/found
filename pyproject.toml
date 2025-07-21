@@ -1,5 +1,5 @@
 [project]
-name = "docfinder"
+name = "found"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.scripts]
-docs = "docfinder:cli"
+found = "found:cli"
 
 [build-system]
 requires = ["hatchling"]
