@@ -10,6 +10,7 @@ from typing_extensions import Annotated
 
 import faiss
 import numpy as np
+import pandas as pd
 import typer
 from platformdirs import user_cache_dir
 from sentence_transformers import SentenceTransformer
@@ -45,6 +46,9 @@ def cache_index(cachedir, cache_key_arg):
         hash_path = os.path.join(cachedir, "filelist.hash.json")
 
         def content_hash(obj) -> str:
+            # If obj is a pandas DataFrame, convert to dict for stable hashing
+            if hasattr(obj, "to_dict"):
+                obj = obj.to_dict(orient="records")
             obj_bytes = json.dumps(obj, sort_keys=True).encode("utf-8")
             return hashlib.sha256(obj_bytes).hexdigest()
 
@@ -67,21 +71,31 @@ def cache_index(cachedir, cache_key_arg):
         @functools.wraps(func)
         def wrapper(*args, **kwargs) -> faiss.IndexFlatL2:
             try:
-                hash_value = content_hash(kwargs[cache_key_arg])
-
+                obj = kwargs[cache_key_arg]
             except KeyError:
                 logger.error(f"cache_key_arg {cache_key_arg} not found in kwargs.")
                 raise ValueError("cache_key_arg must be provided in kwargs.")
+            hash_value = content_hash(obj)
             logger.debug(f"Hash over {cache_key_arg} data: {hash_value}.")
             cached_hash = load_hash()
-            if cached_hash == hash_value and Path(index_path).is_file():
-                logger.debug("Restoring index from cache.")
+            # Serialize DataFrame to JSON for caching
+            df_cache_path = os.path.join(cachedir, "documents.json")
+            if (
+                cached_hash == hash_value
+                and Path(index_path).is_file()
+                and Path(df_cache_path).is_file()
+            ):
+                logger.debug("Restoring index and documents from cache.")
+                # Optionally, you can load the DataFrame here if needed
                 return load_index()
             else:
                 logger.debug("Building index.")
                 index = func(*args, **kwargs)
                 save_index(index)
                 save_hash(hash_value)
+                # Save DataFrame as JSON
+                if hasattr(obj, "to_json"):
+                    obj.to_json(df_cache_path, orient="records", lines=False)
                 return index
 
         return wrapper
@@ -100,33 +114,42 @@ class DocumentFinder:
         self.logger = logger
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    def get_documents(self, document_base: Path) -> list[str]:
-        documents: list[str] = []
+    def get_documents(self, document_base: Path) -> pd.DataFrame:
+        rows = []
         for path in document_base.rglob("*"):
             if path.is_file():
                 rel_dir = str(path.relative_to(document_base))
                 fname_parts = re.sub(r"\W+", " ", str(path))
-                entry = f"{rel_dir} - {fname_parts}"
-                documents.append(entry)
-        logger.debug(f"Found {len(documents)} documents.")
-        return documents
+                rows.append(
+                    {
+                        "rel_path": rel_dir,
+                        "fname_parts": fname_parts,
+                        "full_path": str(path),
+                    }
+                )
+        df = pd.DataFrame(rows)
+        logger.debug(f"Found {len(df)} documents.")
+        return df
 
     @cache_index(user_cache_dir(appname), cache_key_arg="documents")
-    def build_index(self, *, documents: list[str]) -> faiss.IndexFlatL2:
-        doc_embeddings: np.ndarray = self.model.encode(documents)
+    def build_index(self, *, documents: pd.DataFrame) -> faiss.IndexFlatL2:
+        doc_embeddings: np.ndarray = self.model.encode(documents["rel_path"].tolist())
         index: faiss.IndexFlatL2 = faiss.IndexFlatL2(doc_embeddings.shape[1])
         index.add(doc_embeddings)
         return index
 
     def find_candidates(
         self, query: str, num_candidates: int, documents_base: Path
-    ) -> str:
+    ) -> list[str]:
         """Find the best candidating documents for the given query."""
         documents = self.get_documents(documents_base)
         index: faiss.IndexFlatL2 = self.build_index(documents=documents)
         query_vector: np.ndarray = self.model.encode([query])
         D, I = index.search(query_vector, k=num_candidates)
-        candidates = [documents[I[0][i]] for i in range(I.shape[1])]
+        candidates = [
+            f"{documents.iloc[I[0][i]]['full_path']} (distance: {D[0][i]:.4f})"
+            for i in range(I.shape[1])
+        ]
         return candidates
 
 
