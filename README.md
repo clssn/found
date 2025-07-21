@@ -33,6 +33,7 @@ found doc "your query"
 
 #### Options
 - `--document-dir`, `-d`: Specify the directory containing documents (default: `~/Documents`)
+- `--candidates`, `-n`: Number of candidates desired
 - `--verbose`, `-v`: Enable debug logging
 
 #### Example
@@ -45,7 +46,7 @@ found doc "Tax certificate 2024" -d ~/Documents
 - Generates semantic embeddings for each document using SentenceTransformers
 - Builds a FAISS index for fast similarity search
 - Caches the index and document list for future queries
-- Returns the best matching document for your query
+- Returns the best matching documents for your query
 
 ## Requirements
 - Python 3.8+

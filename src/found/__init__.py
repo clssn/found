@@ -118,14 +118,16 @@ class DocumentFinder:
         index.add(doc_embeddings)
         return index
 
-    def find_best_match(self, query: str, documents_base: Path) -> str:
-        """Find the best matching document for the given query."""
+    def find_candidates(
+        self, query: str, num_candidates: int, documents_base: Path
+    ) -> str:
+        """Find the best candidating documents for the given query."""
         documents = self.get_documents(documents_base)
         index: faiss.IndexFlatL2 = self.build_index(documents=documents)
         query_vector: np.ndarray = self.model.encode([query])
-        D, I = index.search(query_vector, k=1)
-        match: str = documents[I[0][0]]
-        return match
+        D, I = index.search(query_vector, k=num_candidates)
+        candidates = [documents[I[0][i]] for i in range(I.shape[1])]
+        return candidates
 
 
 cli = typer.Typer()
@@ -144,6 +146,14 @@ def version():
 @cli.command()
 def doc(
     query: str = typer.Argument(..., help="Search query for your documents."),
+    num_candidates: Annotated[
+        int,
+        typer.Option(
+            "--candidates",
+            "-n",
+            help="Number of candidate documents to consider.",
+        ),
+    ] = 5,
     document_dir: Annotated[
         str,
         typer.Option(
@@ -156,14 +166,13 @@ def doc(
         False, "--verbose", "-v", help="Enable debug logging."
     ),
 ):
-    """Search for the best matching document."""
+    """Search for the best matching document candidates."""
     if verbose:
         logger.setLevel(logging.DEBUG)
     app = DocumentFinder()
-    match = app.find_best_match(query, Path(document_dir))
+    candidates = app.find_candidates(query, num_candidates, Path(document_dir))
 
-    print(f"query: {query}")
-    print(f"found document: {match}")
+    print("Found! candidates:\n" + "\n".join(candidates))
 
 
 if __name__ == "__main__":
