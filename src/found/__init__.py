@@ -133,12 +133,12 @@ cli = typer.Typer()
 
 @cli.command()
 def version():
-    """Show the version of found."""
+    """Show the version of pyfound."""
     try:
-        ver = importlib.metadata.version("found")
+        ver = importlib.metadata.version("pyfound")
     except importlib.metadata.PackageNotFoundError:
         ver = "unknown (package not installed)"
-    print(f"found version {ver}")
+    print(f"pyfound version {ver}")
 
 
 @cli.command()

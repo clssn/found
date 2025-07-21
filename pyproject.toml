@@ -1,6 +1,6 @@
 [project]
 name = "pyfound"
-version = "0.1.0"
+version = "0.1.2"
 description = "Found! is an AI enabled tool for fast semantic search over your personal documents."
 readme = "README.md"
 authors = [
